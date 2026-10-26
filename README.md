@@ -14,7 +14,7 @@ ACT（Action Chunking with Transformers）を模倣学習し、
 - ロボット：SO-101（フォロワー／リーダー）
 - カメラ：USBカメラ 1台（640×360, 30fps）
 - PC：Ubuntu, NVIDIA RTX A5000
-- LeRobot：commit （コミットID）
+- LeRobot：commit 22bd7a2f489b367d8df42de803b1e8c4ca63a3f9
 
 ## 実行手順
 1. `scripts/env.sh` のポート・IDを環境に合わせて変更
