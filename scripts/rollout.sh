@@ -3,6 +3,7 @@ source "$(dirname "$0")/env.sh"
 lerobot-rollout \
   --strategy.type=episodic \
   --policy.path=outputs/train/act_green_test/checkpoints/last/pretrained_model \
+  --policy.n_action_steps=1 --policy.temporal_ensemble_coeff=0.01 \
   --robot.type=so101_follower --robot.port=$FOLLOWER_PORT --robot.id=$FOLLOWER_ID \
   --robot.max_relative_target=20 --robot.cameras="$CAMERAS" \
   --task="$TASK" --duration=40 \

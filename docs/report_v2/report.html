@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PAI最終課題 説明資料</title>
+<style>
+  @page { size: A4; margin: 18mm 18mm 16mm; }
+  :root { --olive: #b0af8f; --olive-dark: #6f6e52; --ink: #1d1d1b; --muted: #5a5a55; --line: #d9d8cc; --tint: #f4f4ee; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans CJK JP", "Noto Sans JP", sans-serif; color: var(--ink); background: #fff; font-size: 10pt; line-height: 1.7; }
+  h1, h2, h3 { line-height: 1.35; }
+  h2 { font-size: 15pt; margin: 0 0 10px; padding: 0 0 6px 12px; border-left: 6px solid var(--olive); border-bottom: 1px solid var(--line); break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 16px 0 6px; break-after: avoid; }
+  section { margin-bottom: 22px; }
+  p { margin: 0 0 8px; }
+  ul, ol { margin: 0 0 8px; padding-left: 1.4em; }
+  li { margin-bottom: 3px; }
+  code { font-family: "Noto Sans Mono CJK JP", monospace; font-size: 8.8pt; background: var(--tint); padding: 1px 4px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9.3pt; break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: var(--tint); font-weight: 700; white-space: nowrap; }
+  figure { margin: 8px 0 14px; break-inside: avoid; }
+  figcaption { font-size: 8.8pt; color: var(--muted); margin-top: 4px; text-align: center; }
+  .row { display: flex; gap: 6px; }
+  .row img { flex: 1; min-width: 0; width: 100%; border-radius: 3px; display: block; }
+  .note { background: var(--tint); border-left: 4px solid var(--olive); padding: 8px 12px; font-size: 9.3pt; margin: 8px 0 12px; break-inside: avoid; }
+  .page-break { break-before: page; }
+
+  /* 表紙 */
+  .cover { height: 263mm; position: relative; overflow: hidden; }
+  .cover .bands { position: absolute; top: 0; right: 0; width: 90mm; height: 100%; }
+  .cover .course { font-weight: 700; font-size: 13pt; margin-top: 4mm; }
+  .cover .course span { display: block; font-weight: 400; font-size: 10.5pt; color: var(--muted); }
+  .cover .title { position: absolute; top: 88mm; left: 0; width: 125mm; }
+  .cover .title .kicker { font-size: 10pt; letter-spacing: .3em; color: var(--olive-dark); }
+  .cover .title h1 { font-size: 25pt; margin: 6px 0 10px; }
+  .cover .title .sub { font-size: 11.5pt; color: var(--muted); }
+  .cover .meta { position: absolute; bottom: 6mm; left: 0; font-size: 9.5pt; color: var(--muted); line-height: 1.9; }
+  .cover .meta b { color: var(--ink); font-weight: 700; display: inline-block; width: 6.5em; }
+
+  /* 構成図 */
+  .diagram { width: 100%; height: auto; display: block; }
+  .diagram text { font-family: "Noto Sans CJK JP", sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <svg class="bands" viewBox="0 0 90 263" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="40,0 78,0 38,263 0,263" fill="#b0af8f"/>
+    <polygon points="83,0 123,0 83,263 43,263" fill="#b0af8f"/>
+  </svg>
+  <div class="course">Physical AI 応用編1<span>知能ロボティクス講座 最終課題</span></div>
+  <div class="title">
+    <div class="kicker">FINAL PROJECT REPORT</div>
+    <h1>SO-101 × ACT による<br>スポンジ箱入れタスク</h1>
+    <div class="sub">テレオペで集めたデモから模倣学習し、<br>製造現場の仕分け・検品工程を想定した<br>「掴んで箱に入れる」動作を自律実行する</div>
+  </div>
+  <div class="meta">
+    <div><b>動画</b>https://www.youtube.com/watch?v=DbDuqRO8Ros</div>
+    <div><b>コード</b>https://github.com/mino-2021/pai-appli1-final-so101-sorting</div>
+  </div>
+</div>
+
+<section class="page-break">
+  <h2>1. 概要・目的</h2>
+  <p>本課題では、低価格なロボットアーム SO-101 と、模倣学習アルゴリズム ACT（Action Chunking with Transformers）を用いて、<b>緑色のスポンジを掴んで箱に入れる</b>タスクをロボットに自律実行させた。人がリーダーアームでフォロワーアームを操作（テレオペ）してデモデータを集め、そのデータで ACT を学習し、学習済みモデルだけでロボットを動かす。</p>
+  <p>タスクは、製造現場の<b>仕分け・検品工程</b>（良品を箱へ入れ、不良品を除外する作業）を想定して設計した。第1段階として「良品（緑）を箱に入れる」動作を実現し、第2段階として「不良品（白）は箱に入れず横へよける」仕分けへの拡張を予定している。</p>
+  <table>
+    <tr><th>タスク</th><td>机上の緑のスポンジ1個を掴み、半透明の白い箱へ入れる（1エピソードにつきスポンジ1個）</td></tr>
+    <tr><th>AIの使い方</th><td>ACT による模倣学習（学習と推論の両方を実施）</td></tr>
+    <tr><th>想定する応用</th><td>製造ラインでの部品の仕分け・検品、ピッキング</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>2. システム構成</h2>
+  <h3>2.1 ハードウェア・ソフトウェア</h3>
+  <table>
+    <tr><th>ロボット</th><td>SO-101 フォロワーアーム＋リーダーアーム（サーボ STS3215、6自由度：肩2・肘・手首2・グリッパー）</td></tr>
+    <tr><th>電源</th><td>フォロワー 12V 2A（キット付属）、リーダー 5V</td></tr>
+    <tr><th>カメラ</th><td>USBカメラ1台（640×360、30fps、MJPG）。作業領域を斜め上から撮影</td></tr>
+    <tr><th>PC</th><td>Ubuntu、NVIDIA RTX A5000</td></tr>
+    <tr><th>フレームワーク</th><td>LeRobot（commit <code>22bd7a2f</code>）。ROS2 は使わず、Python から USB 経由で直接サーボを制御</td></tr>
+    <tr><th>AIモデル</th><td>ACT（Zhao ら, 2023）</td></tr>
+  </table>
+
+  <h3>2.2 構成図</h3>
+  <figure>
+    <svg class="diagram" viewBox="0 0 700 250" role="img" aria-label="システム構成図">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6f6e52"/></marker></defs>
+      <g font-size="13" fill="#1d1d1b">
+        <rect x="10" y="20" width="150" height="62" rx="8" fill="#f4f4ee" stroke="#b0af8f"/>
+        <text x="85" y="46" text-anchor="middle" font-weight="700">リーダーアーム</text>
+        <text x="85" y="66" text-anchor="middle" font-size="11" fill="#5a5a55">人が操作（収録時のみ）</text>
+
+        <rect x="10" y="150" width="150" height="62" rx="8" fill="#f4f4ee" stroke="#b0af8f"/>
+        <text x="85" y="176" text-anchor="middle" font-weight="700">USBカメラ</text>
+        <text x="85" y="196" text-anchor="middle" font-size="11" fill="#5a5a55">640×360 / 30fps</text>
+
+        <rect x="250" y="60" width="200" height="130" rx="8" fill="#fff" stroke="#6f6e52" stroke-width="1.5"/>
+        <text x="350" y="86" text-anchor="middle" font-weight="700">PC（LeRobot）</text>
+        <rect x="270" y="98" width="160" height="34" rx="5" fill="#f4f4ee" stroke="#d9d8cc"/>
+        <text x="350" y="120" text-anchor="middle" font-size="12">データ収録・学習</text>
+        <rect x="270" y="142" width="160" height="34" rx="5" fill="#b0af8f"/>
+        <text x="350" y="164" text-anchor="middle" font-size="12" font-weight="700">ACT 推論</text>
+
+        <rect x="540" y="85" width="150" height="80" rx="8" fill="#f4f4ee" stroke="#b0af8f"/>
+        <text x="615" y="115" text-anchor="middle" font-weight="700">フォロワーアーム</text>
+        <text x="615" y="135" text-anchor="middle" font-size="11" fill="#5a5a55">スポンジを掴み</text>
+        <text x="615" y="151" text-anchor="middle" font-size="11" fill="#5a5a55">箱へ入れる</text>
+      </g>
+      <g stroke="#6f6e52" stroke-width="1.6" fill="none">
+        <path d="M160 51 L250 95" marker-end="url(#a)"/>
+        <path d="M160 181 L250 160" marker-end="url(#a)"/>
+        <path d="M450 112 L540 112" marker-end="url(#a)"/>
+        <path d="M540 140 L450 140" marker-end="url(#a)"/>
+      </g>
+      <g font-size="10.5" fill="#5a5a55">
+        <text x="168" y="62">関節角度</text>
+        <text x="168" y="200">画像</text>
+        <text x="458" y="104">目標関節角度</text>
+        <text x="458" y="156">現在の関節角度</text>
+      </g>
+    </svg>
+    <figcaption>図1　システム構成（USB 接続。収録時はリーダーの角度をフォロワーへ送り、推論時は ACT の出力を送る）</figcaption>
+  </figure>
+
+  <h3>2.3 ACT の概要</h3>
+  <p>ACT は Stanford の ALOHA プロジェクト（Zhao ら, 2023）で提案された模倣学習アルゴリズムである。カメラ画像と現在の関節角度を入力として、<b>今後の行動をまとめて（チャンク単位で）予測</b>する。1ステップずつ予測する手法に比べ、誤差の蓄積が起きにくく、滑らかな動作が得やすい。</p>
+  <ul>
+    <li>画像エンコーダ：ResNet-18（ImageNet 事前学習）</li>
+    <li>本体：Transformer エンコーダ（4層）・デコーダ（1層）、CVAE（潜在次元 32）で人のデモのばらつきを扱う</li>
+    <li>出力：今後 100 ステップ分の目標関節角度（6軸）</li>
+    <li>損失：行動の L1 損失 ＋ KL ダイバージェンス（重み 10）</li>
+  </ul>
+</section>
+
+<section>
+  <h2>3. 手順</h2>
+  <ol>
+    <li><b>キャリブレーション</b>：リーダーとフォロワーを同じ中央姿勢で校正し、角度のずれを防いだ。</li>
+    <li><b>データ収集</b>：<code>lerobot-record</code> でリーダーアームを操作し、カメラ画像と関節角度を 30fps で記録した。</li>
+    <li><b>学習</b>：<code>lerobot-train</code> で ACT を学習した。</li>
+    <li><b>推論</b>：<code>lerobot-rollout</code> で学習済みモデルを読み込み、ロボットを自律動作させた。</li>
+  </ol>
+  <figure>
+    <div class="row">
+      <img src="../images/teleop_0.jpg" alt="テレオペ開始時">
+      <img src="../images/teleop_8.jpg" alt="スポンジを掴む">
+      <img src="../images/teleop_16.jpg" alt="箱に入れた後">
+    </div>
+    <figcaption>図2　テレオペによるデータ収集（ロボット視点カメラ。左から：開始時、把持、箱へ投入後）</figcaption>
+  </figure>
+
+  <h3>3.1 データ収集</h3>
+  <table>
+    <tr><th>データセット</th><td><code>so101_green_test</code></td></tr>
+    <tr><th>エピソード数</th><td>10（総フレーム数 5,609、1エピソード平均 約19秒）</td></tr>
+    <tr><th>観測</th><td>カメラ画像 640×360 ＋ 関節角度 6次元</td></tr>
+    <tr><th>行動</th><td>目標関節角度 6次元（リーダーアームの角度）</td></tr>
+  </table>
+
+  <h3>3.2 学習設定</h3>
+  <table>
+    <tr><th>ステップ数</th><td>20,000</td><th>バッチサイズ</th><td>8</td></tr>
+    <tr><th>学習率</th><td>1e-5（バックボーンも 1e-5）</td><th>チャンクサイズ</th><td>100</td></tr>
+    <tr><th>学習時間</th><td>約20分（RTX A5000）</td><th>最終 loss</th><td>約 0.13</td></tr>
+  </table>
+
+  <h3>3.3 推論設定</h3>
+  <p><code>lerobot-rollout</code>（episodic モード）で実行した。主な設定は以下のとおり（4.3・5.3 を参照）。</p>
+  <table>
+    <tr><th>temporal ensembling</th><td><code>n_action_steps=1</code>、<code>temporal_ensemble_coeff=0.01</code>（毎ステップ予測し、過去の予測と加重平均）</td></tr>
+    <tr><th>max_relative_target</th><td>20（フォロワーの1ステップあたりの移動量上限）</td></tr>
+    <tr><th>評価</th><td>1試行 = 1エピソード（最大30秒）、試行間はロボットが初期姿勢へ戻り、人がスポンジを置き直す</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>4. 結果</h2>
+  <p>学習済みの ACT モデルだけで、ロボットがスポンジを掴み、箱まで運んで離す一連の動作を<b>自律的に実行できた</b>。</p>
+  <figure>
+    <div class="row">
+      <img src="../images/rollout_26.jpg" alt="開始">
+      <img src="../images/rollout_33.jpg" alt="把持">
+      <img src="../images/rollout_36.jpg" alt="運搬">
+      <img src="../images/rollout_39.jpg" alt="箱へ投入">
+    </div>
+    <figcaption>図3　ACT による自律動作（左から：開始、把持、運搬、箱へ投入。スポンジの置き直しのみ人が行っている）</figcaption>
+  </figure>
+  <h3>4.1 動作確認（学習時と同じスポンジ）</h3>
+  <p>学習直後の動作確認（約60秒の連続記録）では、学習データと同じ大きさのスポンジで <b>3回中2回</b> 箱に入れることができた。空振りや落下の後に、モデルが自分で掴み直す挙動も見られた。</p>
+  <table>
+    <tr><th>試行</th><th>結果</th><th>様子</th></tr>
+    <tr><td>1</td><td>成功</td><td>1回目の把持は空振り。自ら掴み直して箱に入れた</td></tr>
+    <tr><td>2</td><td>成功</td><td>一度で把持し、箱に入れた</td></tr>
+    <tr><td>3</td><td>未完了</td><td>把持後、運搬中に箱の手前で落下。掴み直しの途中で記録終了</td></tr>
+  </table>
+
+  <h3>4.2 成功率の評価（小さく切ったスポンジ）</h3>
+  <p>1試行 = 1エピソード（最大30秒）として18回試行し、30秒経過時点でスポンジが箱の中にあれば成功とした。評価時のスポンジは、<b>学習時より小さく切ったもの</b>を使用した（動作改善のために試した条件。経緯は 4.3）。</p>
+  <table>
+    <tr><th>試行数</th><td>18</td><th>成功</th><td>6（<b>成功率 33%</b>）</td></tr>
+    <tr><th>成功した試行</th><td colspan="3">1, 2, 3, 4, 8, 9 回目（0回目始まり）。箱に入るまで約11〜19秒</td></tr>
+    <tr><th>失敗の内訳</th><td colspan="3">把持の空振りを繰り返す：10回、スポンジの手前で停止：1回、箱の縁に近く押すだけで持ち上げられない：1回</td></tr>
+  </table>
+  <figure>
+    <div class="row">
+      <img src="../images/eval_success_4.jpg" alt="成功例 把持">
+      <img src="../images/eval_success_10.jpg" alt="成功例 運搬">
+      <img src="../images/eval_success_14.jpg" alt="成功例 箱へ投入">
+    </div>
+    <div class="row" style="margin-top:6px">
+      <img src="../images/eval_fail_8.jpg" alt="失敗例 把持">
+      <img src="../images/eval_fail_20.jpg" alt="失敗例 空振り">
+      <img src="../images/eval_fail_29.jpg" alt="失敗例 終了時">
+    </div>
+    <figcaption>図4　評価試行の例（上：成功、把持→運搬→箱へ投入。下：失敗、把持の空振りを繰り返し、30秒後もスポンジは箱の外）</figcaption>
+  </figure>
+  <p>失敗のほとんどは<b>把持の失敗</b>であり、一度掴めた試行はほぼ箱まで運べていた。スポンジが小さく薄くなったことで、学習データで覚えたグリッパーの位置・閉じ具合と合わなくなったと考えられる。また、後半の10〜17回目は8回連続で失敗しており、スポンジの配置の違いや、連続動作によるサーボの温度上昇の影響も考えられるが、今回のデータからは切り分けられていない。</p>
+  <div class="note">学習時と同じ大きさのスポンジでの成功率評価は、今後実施する。また、今回は学習ログを保存していなかったため、loss の推移グラフは掲載していない。</div>
+
+  <h3>4.3 動作の滑らかさの改善</h3>
+  <p><b>max_relative_target</b>：当初は安全のため <code>max_relative_target=5</code> で推論したが、1ステップの移動量が制限されすぎて動きがかくかくし、スポンジを掴めなかった。ロボットが出力された目標に追いつけず、モデルの想定と実際の姿勢がずれるためである。<b>20 に緩めたところ、滑らかに動作し把持に成功した</b>。</p>
+  <p><b>temporal ensembling</b>：ACT は既定では 100 ステップ分の行動をまとめて出力し、それを順に実行する。この場合、予測が切り替わる約3.3秒ごとに動きが不連続になる。動作確認では ACT の論文にある temporal ensembling（毎ステップ予測し、過去の予測と指数加重平均する）を使い、滑らかに動作させた。評価用に新たに作成したスクリプトには当初この設定が含まれておらず、動きがかくかくした。そこで、把持しやすくなるかを確かめるためにスポンジを小さくする条件も試した。その後、動作確認時のコマンドと比較して原因が temporal ensembling の有無であると特定し、設定を有効にして評価を行った（スポンジは小さくした条件のまま）。</p>
+</section>
+
+<section>
+  <h2>5. 工夫点（サンプル「SO-101入門」からの発展）</h2>
+  <h3>5.1 製造現場の仕分け・検品に見立てたタスク設計</h3>
+  <p>単なるピック＆プレースではなく、「良品は箱へ、不良品は除外」という実際の工程を想定した。第1段階（箱入れ）で動作を確立し、色の違いによる仕分けへ段階的に拡張できる設計とした。</p>
+  <h3>5.2 認識しやすい作業環境の設計</h3>
+  <ul>
+    <li>対象物に<b>スポンジ</b>を採用：柔らかく形が変わるため、把持位置が多少ずれても掴みやすい</li>
+    <li><b>濃い色の机と明るい緑</b>の組み合わせで、対象物と背景のコントラストを高くした</li>
+    <li>カメラの画角・背景・照明を固定し、収録時と推論時の見え方の差を減らした</li>
+  </ul>
+  <h3>5.3 動作パラメータの調整</h3>
+  <ul>
+    <li><code>max_relative_target</code> を 5 → 20 と調整し、安全性を保ちつつモデルの出力に追従できるようにした（4.3）</li>
+    <li>temporal ensembling を使い、行動チャンクの切り替わりで生じる不連続な動きを抑えた（4.3）</li>
+  </ul>
+  <h3>5.4 1試行 = 1エピソードの評価手順</h3>
+  <p>動作確認では1本の連続記録の中で何度も試行していたため、試行ごとの成否を数えにくかった。評価では episodic モードで1試行を1エピソードとして記録し、試行間はロボットを自動で初期姿勢に戻すことで、全試行を同じ手順・同じ時間制限で比較できるようにした（<code>scripts/eval_rollout.sh</code>、結果は <code>docs/eval_results.csv</code>）。</p>
+  <h3>5.5 再現性を高める環境構築</h3>
+  <ul>
+    <li>USB の抜き差しでデバイス番号（ttyACM）が入れ替わる問題に対し、<code>/dev/serial/by-id/</code> の固定パスを使用</li>
+    <li>ポート・ID・カメラ設定を <code>scripts/env.sh</code> にまとめ、収録・学習・推論をスクリプト化</li>
+    <li>使用した LeRobot の commit を固定し、バージョン固有の注意点（推論は <code>lerobot-rollout</code>、データセット名は <code>rollout_</code> 始まり、カメラは 640×360 のみ対応など）を記録</li>
+  </ul>
+</section>
+
+<section>
+  <h2>6. 課題と今後の展望</h2>
+  <h3>6.1 課題</h3>
+  <ul>
+    <li><b>物体サイズへの汎化</b>：学習時より小さいスポンジでは成功率が 33% にとどまり、主に把持で失敗した。学習データが1種類の大きさだけのため、大きさが変わると対応できない。</li>
+    <li><b>データ量</b>：10エピソードと少なく、スポンジの位置や向きの変化への対応力に限界がある。運搬中の落下もデータ不足が一因と考えられる。</li>
+    <li><b>評価条件</b>：学習時と同じ大きさのスポンジでの成功率を、まだ計測できていない。</li>
+    <li><b>電源容量</b>：フォロワーの電源（12V 2A）は余裕が小さい。評価時には、起動直後にトルクを入れる瞬間の通信エラーが何度か発生した。</li>
+  </ul>
+  <h3>6.2 今後の展望</h3>
+  <ul>
+    <li>学習時と同じ大きさのスポンジで成功率を評価し、小さいスポンジの結果と比較する</li>
+    <li>緑で 40〜50 エピソードを本収録し、大きさの異なるスポンジも含めて 50,000 ステップ程度で本学習し、成功率と汎化性能を上げる</li>
+    <li>白スポンジを加え、<b>色による仕分け</b>（良品は箱へ、不良品は横へ）に拡張し、色別の成功率を評価する</li>
+    <li>ねじ締めなど、より精密な作業への挑戦</li>
+    <li>物体検出による工程作業分析との連携や、産業用ロボットへの展開</li>
+  </ul>
+</section>
+
+<section>
+  <h2>参考文献</h2>
+  <ol>
+    <li>T. Z. Zhao, V. Kumar, S. Levine, C. Finn. “Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware.” RSS, 2023.</li>
+    <li>Hugging Face LeRobot. https://github.com/huggingface/lerobot</li>
+  </ol>
+</section>
+
+</body>
+</html>
