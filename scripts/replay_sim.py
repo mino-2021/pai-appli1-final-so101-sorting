@@ -18,6 +18,10 @@ LeRobot の SO-101 は度単位（use_degrees=True、範囲の中央が 0 度）
 - 掴む・放すの判定は、グリッパーの指令値（action）で行う（スポンジを挟むと状態の値は閉じきらないため）
 - スポンジ：最後に掴んだ瞬間（最後から2番目の「開く」が終わった時点）の先端の真下に置き、
   掴んでいる間は先端にくっつけて動かし、最後に開いたら真下に落とす
+
+必要なパッケージ（lerobot の venv に入っているもの。動作確認したバージョン）：
+  mujoco 3.11.0、imageio 2.37.4＋imageio-ffmpeg 0.6.0（--video で MP4 を保存するときだけ使う）
+  モデル：~/work/robo/models/SO-ARM100（TheRobotStudio/SO-ARM100 の Simulation/SO101）
 """
 
 import argparse
@@ -43,7 +47,7 @@ parser.add_argument("--repo", default="mino/so101_sort_2cam_v3")
 parser.add_argument("--key", default="observation.state", help="observation.state（実際の姿勢）か action（指令値）")
 parser.add_argument("--speed", type=float, default=1.0)
 parser.add_argument("--no-objects", action="store_true")
-parser.add_argument("--model", default=str(Path.home() / "work/robo/SO-ARM100/Simulation/SO101/scene.xml"))
+parser.add_argument("--model", default=str(Path.home() / "work/robo/models/SO-ARM100/Simulation/SO101/scene.xml"))
 parser.add_argument("--video", help="指定すると画面を出さずに、この名前の MP4 に保存して終了")
 parser.add_argument("--size", default="1280x720", help="動画の大きさ（幅x高さ）")
 parser.add_argument("--camera", default="180,-25,0.7", help="動画の視点：方位角（度）,仰角（度）,距離（m）")
