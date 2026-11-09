@@ -1,16 +1,19 @@
 #!/bin/bash
-# 2台構成（前方＋手首）で仕分けタスクを収録。色ごとに10エピソード、同じデータセットに追加
-# 使い方：scripts/record_2cam.sh green → scripts/record_2cam.sh white
+# 2台構成（前方＋手首）で仕分けタスクを収録。指定した回数ずつ、同じデータセットに追加
+# v3：緑スポンジ→箱、黄スポンジ→赤いお椀（白→箱の横は v2 の so101_sort_2cam に残す）
+# 使い方：scripts/record_2cam.sh green 20 → scripts/record_2cam.sh yellow 20
 # 途中で止まったときは残りの回数を2つ目に指定（例：scripts/record_2cam.sh green 7）
 # 1回目はデータセットを作成、2回目以降は --resume=true で追記（日時は付けない）
+# 別のデータセットに撮るときは REPO_ID=mino/xxx scripts/record_2cam.sh green
 source "$(dirname "$0")/env_2cam.sh"
 case "$1" in
   green) TASK="Put the green sponge in the box" ;;
+  yellow) TASK="Put the yellow sponge in the red bowl" ;;
   white) TASK="Put the white sponge beside the box" ;;
-  *) echo "usage: $0 green|white [回数]"; exit 1 ;;
+  *) echo "usage: $0 green|yellow|white [回数]"; exit 1 ;;
 esac
 NUM_EPISODES=${2:-10}
-REPO_ID=mino/so101_sort_2cam
+REPO_ID=${REPO_ID:-mino/so101_sort_2cam_v3}
 # resume には保存先の明示が必要（LeRobot の仕様）。既定と同じ場所を指定する
 DATASET_ROOT=$HOME/.cache/huggingface/lerobot/$REPO_ID
 RESUME=false
