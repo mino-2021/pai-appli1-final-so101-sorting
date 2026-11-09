@@ -4,6 +4,8 @@
         python scripts/replay_sim.py 25 --speed 0.5  → 0.5 倍速
         python scripts/replay_sim.py 5 --no-objects  → ロボットだけ
         python scripts/replay_sim.py 5 --repo mino/so101_sort_2cam --key action
+        python scripts/replay_sim.py 31 --video sim_ep31.mp4  → 画面を出さずに動画（MP4）で保存
+        python scripts/replay_sim.py 31 --save-xml sim_ep31.xml → 物体を含めたモデルを XML で保存
 
 モデルは TheRobotStudio/SO-ARM100 の Simulation/SO101/scene.xml（new calib＝各関節の範囲の中央が 0 度）。
 LeRobot の SO-101 は度単位（use_degrees=True、範囲の中央が 0 度）なのでラジアンに直すだけで対応する。
@@ -42,6 +44,10 @@ parser.add_argument("--key", default="observation.state", help="observation.stat
 parser.add_argument("--speed", type=float, default=1.0)
 parser.add_argument("--no-objects", action="store_true")
 parser.add_argument("--model", default=str(Path.home() / "work/robo/SO-ARM100/Simulation/SO101/scene.xml"))
+parser.add_argument("--video", help="指定すると画面を出さずに、この名前の MP4 に保存して終了")
+parser.add_argument("--size", default="1280x720", help="動画の大きさ（幅x高さ）")
+parser.add_argument("--camera", default="180,-25,0.7", help="動画の視点：方位角（度）,仰角（度）,距離（m）")
+parser.add_argument("--save-xml", help="物体を含めたモデルを、この名前の XML に保存")
 args = parser.parse_args()
 
 ds = LeRobotDataset(args.repo)
@@ -70,6 +76,8 @@ print(f"episode {args.episode}: {len(values)} フレーム（{len(values) / ds.f
 
 spec = mujoco.MjSpec.from_file(args.model)
 spec.compiler.meshdir = str(Path(args.model).parent / "assets")
+WIDTH, HEIGHT = (int(x) for x in args.size.split("x"))
+spec.visual.global_.offwidth, spec.visual.global_.offheight = WIDTH, HEIGHT  # 動画用の描画サイズの上限
 world = spec.worldbody
 VISUAL = dict(contype=0, conaffinity=0)
 model = spec.compile()  # 先端位置の計算用（物体なし）
@@ -164,6 +172,39 @@ def sponge_pose(i, v, fall_from):
     return np.array([pos[0], pos[1], pos[2] + (bottom - pos[2]) * k]), np.eye(3)
 
 
+def set_frame(i, v, fall_from):
+    """i フレーム目の姿勢（とスポンジの位置）をセットする。落とし始めの位置を返す"""
+    if not args.no_objects:
+        if i == release_t:
+            fall_from = sponge_pose(i - 1, v, None)
+        pos, rot = sponge_pose(i, v, fall_from)
+        data.mocap_pos[0] = pos
+        mujoco.mju_mat2Quat(data.mocap_quat[0], rot.flatten())
+    data.qpos[qadr] = to_qpos(v)
+    mujoco.mj_forward(model, data)
+    return fall_from
+
+
+if args.save_xml:
+    Path(args.save_xml).write_text(spec.to_xml())
+    print(f"モデルを保存：{args.save_xml}")
+
+if args.video:
+    import imageio
+
+    renderer = mujoco.Renderer(model, HEIGHT, WIDTH)
+    cam = mujoco.MjvCamera()
+    cam.azimuth, cam.elevation, cam.distance = (float(x) for x in args.camera.split(","))
+    cam.lookat[:] = [0.2, 0, 0.03]
+    fall_from = None
+    with imageio.get_writer(args.video, fps=ds.fps * args.speed, codec="libx264", quality=8) as writer:
+        for i, v in enumerate(values):
+            fall_from = set_frame(i, v, fall_from)
+            renderer.update_scene(data, cam)
+            writer.append_data(renderer.render())
+    print(f"動画を保存：{args.video}")
+    raise SystemExit
+
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
         fall_from = None
@@ -171,14 +212,7 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
             if not viewer.is_running():
                 break
             start = time.time()
-            if not args.no_objects:
-                if i == release_t:
-                    fall_from = sponge_pose(i - 1, v, None)
-                pos, rot = sponge_pose(i, v, fall_from)
-                data.mocap_pos[0] = pos
-                mujoco.mju_mat2Quat(data.mocap_quat[0], rot.flatten())
-            data.qpos[qadr] = to_qpos(v)
-            mujoco.mj_forward(model, data)
+            fall_from = set_frame(i, v, fall_from)
             viewer.sync()
             time.sleep(max(0, 1 / (ds.fps * args.speed) - (time.time() - start)))
         time.sleep(1.0)  # 最後の姿勢で 1 秒止めてから繰り返す
